@@ -1,0 +1,8 @@
+{
+  "name": "NexusStudio",
+  "description": "A next-generation AI content creation platform integrating video, image, and audio generation tools.",
+  "requestFramePermissions": [
+    "microphone",
+    "camera"
+  ]
+}
