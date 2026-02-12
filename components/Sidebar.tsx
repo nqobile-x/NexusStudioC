@@ -9,18 +9,17 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isOpen, onClose }) => {
-    const navItemClass = (isActive: boolean) => 
-        `flex items-center gap-3 px-3 py-3 rounded-xl transition-all group cursor-pointer ${
-            isActive 
-            ? 'bg-primary/10 text-primary font-medium shadow-sm border border-primary/10' 
+    const navItemClass = (isActive: boolean) =>
+        `flex items-center gap-3 px-3 py-3 rounded-xl transition-all group cursor-pointer ${isActive
+            ? 'bg-primary/10 text-primary font-medium shadow-sm border border-primary/10'
             : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-surface-hover hover:text-slate-900 dark:hover:text-white border border-transparent'
         }`;
 
     return (
         <>
             {/* Mobile Overlay */}
-            <div 
-                className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} 
+            <div
+                className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
                 onClick={onClose}
             />
 
@@ -59,7 +58,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isOpen, onCl
                             <span className="material-icons-round group-hover:text-primary transition-colors">folder_open</span>
                             Projects
                         </div>
-                        
+
                         <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 mt-8">Creative Suite</p>
                         <div onClick={() => onNavigate(ViewState.AI_LAB_VIDEO)} className={navItemClass(currentView === ViewState.AI_LAB_VIDEO)}>
                             <span className="material-icons-round group-hover:text-primary transition-colors">video_library</span>
@@ -81,6 +80,29 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isOpen, onCl
                         <div onClick={() => onNavigate(ViewState.MEDIA_ANALYSIS)} className={navItemClass(currentView === ViewState.MEDIA_ANALYSIS)}>
                             <span className="material-icons-round group-hover:text-primary transition-colors">analytics</span>
                             Analysis
+                        </div>
+
+                        <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 mt-8">Video Editing</p>
+                        <div onClick={() => onNavigate(ViewState.VIDEO_EDITOR)} className={navItemClass(currentView === ViewState.VIDEO_EDITOR)}>
+                            <span className="material-icons-round group-hover:text-primary transition-colors">movie_edit</span>
+                            Video Editor
+                            <span className="ml-auto bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold shadow-lg shadow-emerald-500/20">NEW</span>
+                        </div>
+                        <div onClick={() => onNavigate(ViewState.CLIP_DETECTOR)} className={navItemClass(currentView === ViewState.CLIP_DETECTOR)}>
+                            <span className="material-icons-round group-hover:text-primary transition-colors">content_cut</span>
+                            Clip Detector
+                        </div>
+                        <div onClick={() => onNavigate(ViewState.CAPTION_STUDIO)} className={navItemClass(currentView === ViewState.CAPTION_STUDIO)}>
+                            <span className="material-icons-round group-hover:text-primary transition-colors">subtitles</span>
+                            Caption Studio
+                        </div>
+                        <div onClick={() => onNavigate(ViewState.EXPORT)} className={navItemClass(currentView === ViewState.EXPORT)}>
+                            <span className="material-icons-round group-hover:text-primary transition-colors">ios_share</span>
+                            Export
+                        </div>
+                        <div onClick={() => onNavigate(ViewState.TEMPLATES)} className={navItemClass(currentView === ViewState.TEMPLATES)}>
+                            <span className="material-icons-round group-hover:text-primary transition-colors">dashboard_customize</span>
+                            Templates
                         </div>
                     </div>
                 </nav>
