@@ -141,7 +141,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             </div>
 
             {/* Right Column */}
-            <div className="lg:col-span-4 xl:col-span-3 space-y-6 animate-fade-in" style={{ animationDelay: '100ms' }}>
+            <div className="lg:col-span-4 xl:col-span-3 space-y-6 animate-fade-in [animation-delay:100ms]">
                 {/* AI Insights Panel */}
                 <div className="glass-panel rounded-2xl p-6 relative overflow-hidden group">
                     <div className="absolute -top-20 -right-20 w-48 h-48 bg-primary/20 rounded-full blur-3xl pointer-events-none group-hover:bg-primary/30 transition-colors duration-500"></div>

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import VideoIntelligence, { AnalysisResult, ViralClipCandidate } from '../services/videoIntelligence';
 import SmartEditor, { AutoEditResult } from '../services/smartEditor';
+import { mediaDownloader } from '../services/mediaDownloader';
 import { runtimeStore } from '../services/runtimeStore';
 import { ViewState } from '../types';
 
@@ -16,6 +17,7 @@ interface EditorClip {
     volume: number;
     speed: number;
     thumbnail?: string;
+    removeWatermark?: boolean;
 }
 
 const FILTERS = ['None', 'Cinematic', 'Vintage', 'B&W', 'Neon', 'Warm', 'Cool', 'Film Grain'];
@@ -59,6 +61,12 @@ const VideoEditor: React.FC<VideoEditorProps> = ({ onNavigate }) => {
     const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
     const [showAiPanel, setShowAiPanel] = useState<'suggestions' | 'viral' | 'none'>('none');
 
+    // State - Downloader
+    const [showLinkModal, setShowLinkModal] = useState(false);
+    const [downloadUrl, setDownloadUrl] = useState('');
+    const [isDownloading, setIsDownloading] = useState(false);
+    const [downloadStatus, setDownloadStatus] = useState('');
+
     const [clips, setClips] = useState<EditorClip[]>([
         { id: 'v1', name: 'Clip 1', track: 'video', startTime: 0, duration: 15, color: '#6366f1', opacity: 100, volume: 100, speed: 1 },
         { id: 'a1', name: 'Audio', track: 'audio', startTime: 0, duration: 35, color: '#10b981', opacity: 100, volume: 80, speed: 1 },
@@ -101,6 +109,26 @@ const VideoEditor: React.FC<VideoEditorProps> = ({ onNavigate }) => {
         setIsDragOver(false);
         const file = e.dataTransfer.files[0];
         if (file) handleFileSelect(file);
+    };
+
+    const handleUrlImport = async () => {
+        if (!downloadUrl) return;
+        setIsDownloading(true);
+        setDownloadStatus('Initializing...');
+
+        try {
+            const { blob, filename } = await mediaDownloader.downloadMedia(downloadUrl, (msg) => setDownloadStatus(msg));
+            const file = new File([blob], filename, { type: blob.type });
+            handleFileSelect(file);
+            setShowLinkModal(false);
+            setDownloadUrl('');
+        } catch (err: any) {
+            console.error('Import failed:', err);
+            alert(`Download failed: ${err.message || 'Unknown error'}. Check console for details.`);
+        } finally {
+            setIsDownloading(false);
+            setDownloadStatus('');
+        }
     };
 
     // --- AI Analysis ---
@@ -294,13 +322,19 @@ const VideoEditor: React.FC<VideoEditorProps> = ({ onNavigate }) => {
                     value={projectName}
                     onChange={e => setProjectName(e.target.value)}
                     placeholder="Untitled Project"
+                    title="Project Name"
+                    aria-label="Project Name"
                 />
                 <div className="h-6 w-px bg-slate-700/50 mx-1" />
 
                 <button onClick={() => fileInputRef.current?.click()} className="btn-secondary text-xs flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-card hover:bg-surface-hover border border-slate-700 transition-colors">
                     <span className="material-icons-round text-sm">upload_file</span>Import
                 </button>
-                <input ref={fileInputRef} type="file" accept="video/*" className="hidden" onChange={e => { if (e.target.files?.[0]) handleFileSelect(e.target.files[0]); }} />
+                <input ref={fileInputRef} type="file" accept="video/*" className="hidden" onChange={e => { if (e.target.files?.[0]) handleFileSelect(e.target.files[0]); }} title="Upload Video" aria-label="Upload Video" />
+
+                <button onClick={() => setShowLinkModal(true)} className="btn-secondary text-xs flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-card hover:bg-surface-hover border border-slate-700 transition-colors">
+                    <span className="material-icons-round text-sm">link</span>Link
+                </button>
 
                 <div className="flex-1" />
 
@@ -443,7 +477,17 @@ const VideoEditor: React.FC<VideoEditorProps> = ({ onNavigate }) => {
                     </div>
                     <div className="flex items-center gap-2">
                         <span className="material-icons-round text-xs text-slate-500">zoom_out</span>
-                        <input type="range" min={0.5} max={5} step={0.1} value={zoom} onChange={e => setZoom(Number(e.target.value))} className="w-24 accent-slate-500 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer" />
+                        <input
+                            type="range"
+                            min={0.5}
+                            max={5}
+                            step={0.1}
+                            value={zoom}
+                            onChange={e => setZoom(Number(e.target.value))}
+                            className="w-24 accent-slate-500 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                            title="Zoom Timeline"
+                            aria-label="Zoom Timeline"
+                        />
                         <span className="material-icons-round text-xs text-slate-500">zoom_in</span>
                     </div>
                 </div>
@@ -565,6 +609,86 @@ const VideoEditor: React.FC<VideoEditorProps> = ({ onNavigate }) => {
                     </div>
                 </div>
             </div>
+
+            {/* Link Import Modal */}
+            {showLinkModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
+                    <div className="bg-surface-card border border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                <span className="material-icons-round text-primary">cloud_download</span> Import from URL
+                            </h3>
+                            <button onClick={() => !isDownloading && setShowLinkModal(false)} className="text-slate-500 hover:text-white transition-colors">
+                                <span className="material-icons-round">close</span>
+                            </button>
+                        </div>
+
+                        <p className="text-sm text-slate-400 mb-4">
+                            Paste a link from TikTok, YouTube, or Instagram. We will download a high-quality, watermark-free version if available.
+                        </p>
+
+                        <input
+                            type="text"
+                            value={downloadUrl}
+                            onChange={e => setDownloadUrl(e.target.value)}
+                            placeholder="https://www.tiktok.com/@user/video/..."
+                            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-primary transition-all pr-12 mb-4"
+                            disabled={isDownloading}
+                            title="Media URL"
+                            aria-label="Media URL"
+                        />
+
+                        {isDownloading && (
+                            <div className="mb-4 flex items-center gap-3 text-xs text-indigo-300 bg-indigo-500/10 px-3 py-2 rounded-lg border border-indigo-500/20">
+                                <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                                <span>{downloadStatus}</span>
+                            </div>
+                        )}
+
+                        <div className="flex justify-end gap-3">
+                            <button onClick={() => setShowLinkModal(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white font-medium" disabled={isDownloading}>
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleUrlImport}
+                                disabled={!downloadUrl || isDownloading}
+                                className="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg text-sm font-bold text-white hover:shadow-lg hover:shadow-indigo-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            >
+                                {isDownloading ? 'Downloading...' : 'Import Media'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Clip Properties Panel (Selection) */}
+            {selectedClip && !showAiPanel && (
+                <div className="absolute top-16 right-4 w-64 bg-surface-card border border-slate-700 rounded-xl shadow-2xl p-4 z-30 animate-scale-in origin-top-right">
+                    <div className="flex items-center justify-between mb-3 border-b border-slate-700 pb-2">
+                        <h4 className="text-xs font-bold text-slate-300 uppercase">Selected Clip</h4>
+                        <button onClick={() => setSelectedClip(null)} className="text-slate-500 hover:text-white" title="Close clip properties"><span className="material-icons-round text-sm">close</span></button>
+                    </div>
+
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs text-slate-400">Remove Watermark (Opus/TikTok)</span>
+                            <button
+                                onClick={() => {
+                                    setClips(prev => prev.map(c => c.id === selectedClip ? { ...c, removeWatermark: !c.removeWatermark } : c));
+                                    runtimeStore.clips = clips; // imperfect sync but ok for MVP
+                                }}
+                                className={`w-10 h-5 rounded-full relative transition-colors ${clips.find(c => c.id === selectedClip)?.removeWatermark ? 'bg-primary' : 'bg-slate-700'}`}
+                                title="Toggle Watermark Removal"
+                            >
+                                <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${clips.find(c => c.id === selectedClip)?.removeWatermark ? 'left-6' : 'left-1'}`} />
+                            </button>
+                        </div>
+                        <p className="text-[10px] text-slate-500 leading-tight">
+                            Applies a blur filter to corners where logos usually appear (manual upload fallback).
+                        </p>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -36,11 +36,10 @@ export class FFmpegService {
     }
 
     /**
-     * Export video by concatenating clips and applying trims.
-     * simplified for MVP: just trims and concatenates.
+     * Export video by concatenating clips and applying trims/effects.
      */
     async exportVideo(
-        clips: Array<{ id: string; file: File; startTime: number; duration: number }>,
+        clips: Array<{ id: string; file: File; startTime: number; duration: number; removeWatermark?: boolean }>,
         onProgress?: (stage: string, pct: number) => void
     ): Promise<Blob> {
         if (!this.loaded) await this.load(p => onProgress?.('Loading Engine', p));
@@ -50,32 +49,42 @@ export class FFmpegService {
 
         onProgress?.('Preparing Files', 0);
 
-        // 1. Write files to memory
+        // 1. Write files to memory & Transcode
         for (let i = 0; i < clips.length; i++) {
             const clip = clips[i];
             const name = `clip_${i}.mp4`;
             const data = await fetchFile(clip.file);
             await ffmpeg.writeFile(name, data);
 
-            // Trim each clip individually first (more reliable than complex filters)
             const trimmedName = `trim_${i}.mp4`;
             const duration = clip.duration.toFixed(2);
-            // -ss before -i is fast seek, but less accurate. -ss after -i is slow but accurate.
-            // For trimming, we probably want somewhat accurate.
-            // Using fast seek for now for performance.
-            // Also need to ensure uniform transport stream or re-encoding to concatenate.
-            // "safe" concat usually requires re-encoding to same intermediate format.
+
+            // Build filter complex
+            // Basic scale to 720p + standard fps
+            let filters = 'scale=1280:720,setsar=1:1,fps=30';
+
+            // Add delogo if requested
+            if (clip.removeWatermark) {
+                // "Simple" delogo for common corners (TikTok/Reels usually bottom-right or top-left)
+                // Opus Clip often uses Top-Right.
+                // We'll apply delogo to Top-Left, Top-Right, and Bottom-Right to be safe.
+                // 1280x720
+                // Top-Left: x=20:y=20:w=220:h=90
+                // Top-Right: x=1040:y=20:w=220:h=90
+                // Bottom-Right: x=1040:y=610:w=220:h=90
+                filters += `,delogo=x=20:y=20:w=220:h=90,delogo=x=1040:y=20:w=220:h=90,delogo=x=1040:y=610:w=220:h=90`;
+            }
 
             onProgress?.(`Processing Clip ${i + 1}/${clips.length}`, 10 + (i / clips.length) * 40);
 
-            // Transcode to standard intermediate format (720p, 30fps) to ensure seamless concat
+            // Transcode 
             await ffmpeg.exec([
                 '-i', name,
                 '-ss', clip.startTime.toFixed(2),
                 '-t', duration,
-                '-vf', 'scale=1280:720,setsar=1:1,fps=30',
+                '-vf', filters,
                 '-c:v', 'libx264',
-                '-preset', 'ultrafast', // Speed over size for browser
+                '-preset', 'ultrafast',
                 '-c:a', 'aac',
                 '-ar', '44100',
                 '-ac', '2',
@@ -83,7 +92,6 @@ export class FFmpegService {
             ]);
 
             inputFiles.push(trimmedName);
-            // Clean up original
             await ffmpeg.deleteFile(name);
         }
 
@@ -99,7 +107,7 @@ export class FFmpegService {
             '-f', 'concat',
             '-safe', '0',
             '-i', listName,
-            '-c', 'copy', // Copy stream since we already transcoded
+            '-c', 'copy',
             outputName
         ]);
 
@@ -107,7 +115,7 @@ export class FFmpegService {
 
         // 3. Read result
         const data = await ffmpeg.readFile(outputName);
-        const blob = new Blob([data], { type: 'video/mp4' });
+        const blob = new Blob([data as any], { type: 'video/mp4' });
 
         // Cleanup
         for (const f of inputFiles) await ffmpeg.deleteFile(f);

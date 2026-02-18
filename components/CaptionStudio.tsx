@@ -83,7 +83,7 @@ const CaptionStudio: React.FC = () => {
                     <label className="cursor-pointer bg-surface-card hover:bg-surface-hover border border-slate-700/50 text-white px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 text-sm font-medium">
                         <span className="material-icons-round text-base">upload_file</span>
                         {uploadedFile ? uploadedFile.name.substring(0, 15) : 'Upload'}
-                        <input type="file" accept="video/*,audio/*" onChange={handleUpload} className="hidden" />
+                        <input type="file" accept="video/*,audio/*" onChange={handleUpload} className="hidden" aria-label="Upload media for captions" />
                     </label>
                     <button onClick={handleTranscribe} disabled={!uploadedFile || isTranscribing} className="bg-gradient-to-r from-primary to-indigo-600 disabled:opacity-50 text-white px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg shadow-primary/20 transition-all">
                         {isTranscribing ? <span className="material-icons-round animate-spin text-base">sync</span> : <span className="material-icons-round text-base">mic</span>}
@@ -117,7 +117,7 @@ const CaptionStudio: React.FC = () => {
                         ))}
                         <div className="h-5 w-px bg-slate-800 mx-1" />
                         <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Size</span>
-                        <input type="range" min={12} max={32} value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="w-20 accent-primary h-1" />
+                        <input type="range" min={12} max={32} value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="w-20 accent-primary h-1" title="Font Size" aria-label="Font Size" />
                         <span className="text-xs text-slate-500 font-mono">{fontSize}px</span>
                     </div>
 
@@ -165,16 +165,16 @@ const CaptionStudio: React.FC = () => {
                             <div className="space-y-3">
                                 <div>
                                     <label className="text-[10px] text-slate-500 block mb-1">Text</label>
-                                    <textarea value={activeCaption.text} onChange={e => setCaptions(prev => prev.map(c => c.id === activeCaption.id ? { ...c, text: e.target.value } : c))} className="w-full bg-surface-card border border-slate-700/50 rounded-lg p-2 text-white text-sm outline-none focus:border-primary" rows={2} />
+                                    <textarea value={activeCaption.text} onChange={e => setCaptions(prev => prev.map(c => c.id === activeCaption.id ? { ...c, text: e.target.value } : c))} className="w-full bg-surface-card border border-slate-700/50 rounded-lg p-2 text-white text-sm outline-none focus:border-primary" rows={2} title="Caption Text" aria-label="Caption Text" />
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
                                         <label className="text-[10px] text-slate-500 block mb-1">Start</label>
-                                        <input type="number" step={0.1} value={activeCaption.startTime} onChange={e => setCaptions(prev => prev.map(c => c.id === activeCaption.id ? { ...c, startTime: Number(e.target.value) } : c))} className="w-full bg-surface-card border border-slate-700/50 rounded-lg px-2 py-1.5 text-white text-xs outline-none focus:border-primary" />
+                                        <input type="number" step={0.1} value={activeCaption.startTime} onChange={e => setCaptions(prev => prev.map(c => c.id === activeCaption.id ? { ...c, startTime: Number(e.target.value) } : c))} className="w-full bg-surface-card border border-slate-700/50 rounded-lg px-2 py-1.5 text-white text-xs outline-none focus:border-primary" title="Start Time" aria-label="Start Time" />
                                     </div>
                                     <div>
                                         <label className="text-[10px] text-slate-500 block mb-1">End</label>
-                                        <input type="number" step={0.1} value={activeCaption.endTime} onChange={e => setCaptions(prev => prev.map(c => c.id === activeCaption.id ? { ...c, endTime: Number(e.target.value) } : c))} className="w-full bg-surface-card border border-slate-700/50 rounded-lg px-2 py-1.5 text-white text-xs outline-none focus:border-primary" />
+                                        <input type="number" step={0.1} value={activeCaption.endTime} onChange={e => setCaptions(prev => prev.map(c => c.id === activeCaption.id ? { ...c, endTime: Number(e.target.value) } : c))} className="w-full bg-surface-card border border-slate-700/50 rounded-lg px-2 py-1.5 text-white text-xs outline-none focus:border-primary" title="End Time" aria-label="End Time" />
                                     </div>
                                 </div>
                                 <button onClick={() => setCaptions(prev => prev.filter(c => c.id !== activeCaption.id))} className="w-full py-2 rounded-lg border border-red-500/30 text-red-400 text-xs font-medium hover:bg-red-500/10 transition-all flex items-center justify-center gap-1">
